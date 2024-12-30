@@ -18,7 +18,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
     // 1.taking data from frontend.
     const {fullName, email, username, password } = req.body;
-    console.log(fullName, email, username, password);
+    // console.log(fullName, email, username, password);
 
 
     // 2.validation-checking fields that they are empty or not.
@@ -33,10 +33,10 @@ const registerUser = asyncHandler( async (req, res) => {
     }
 
     //3. checking if user already exists or not.
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{username}, {email}]
     });
-    console.log(existedUser);
+    // console.log(existedUser);
     
     if(existedUser) {
         throw new ApiError(409, "User with email or username already exists");
@@ -45,13 +45,15 @@ const registerUser = asyncHandler( async (req, res) => {
 
     // 4.checking for images or avatar
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
     if(!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required");
     }
-    if(!coverImageLocalPath) {
-        throw new ApiError(400, "Cover Image is required");
+    
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
     }
 
 
@@ -63,6 +65,7 @@ const registerUser = asyncHandler( async (req, res) => {
         throw new ApiError(400, "Avatar file is required");
     }
 
+    // 6.create user object-entry in database
     const user = await User.create({
         fullName,
         avatar: avatar.url,
@@ -72,14 +75,17 @@ const registerUser = asyncHandler( async (req, res) => {
         username: username.toLowerCase()
     })
 
+    // 7.removing password and refresh token field from reponse
     const createdUser = await User.findById(user.id).select(
         "-password -refreshToken"
     )
 
+    //8.checking for user creation
     if(!createdUser) {
         throw new ApiError(500, "Something went wrong while registering the user");
     }
     
+    // 9.return response to user
     return res.status(201).json(
         new ApiResponse(200, createdUser, "User registered Successfully")
     )
