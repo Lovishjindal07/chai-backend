@@ -15,7 +15,7 @@ export {asyncHandler};
 
 
 // const asyncHandler = (fn) => 
-//     async (req,resizeBy,next) => {
+//     async (req,res,next) => {
 //         try {
 //             await fn(req,res,next)
 //         } catch(error) {

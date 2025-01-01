@@ -58,7 +58,8 @@ userSchema.pre("save", async function(next){
 
     this.password = await bcrypt.hash(this.password, 10)
     next()
-})
+});
+
 // way to inject methods in your userSchema
 userSchema.methods.isPasswordCorrect = async function (password){
     return await bcrypt.compare(password, this.password)   //it will return true or false
