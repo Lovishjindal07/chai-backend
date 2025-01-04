@@ -1,8 +1,9 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from '../utils/ApiError.js';
-import {User} from "../models/user.mo2del.js";
+import {User} from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
+
 
 const generateAccessAndRefreshTokens = async(userId) => {
     try {
@@ -144,16 +145,18 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid user credentails");
     }
 
+    // 5. generating access and refresh tokenk
     const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id);
 
     const loggedInUser = User.findById(user._id).
-    select("-password -refreshToken")
+    select("-password -refreshToken")   //In this we are excluding the password and refreshToken fields
 
     const options = {
         httpOnly: true,   //to modify cookies only from server side
         secure: true
     }
 
+    // 6. sending cookies
     return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -169,17 +172,7 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async(req, res) => {
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                refreshToken: undefined
-            }
-        },
-        {
-            new : true
-        }
-    )
+    await User.findByIdAndUpdate(req.user._id, {$set: {refreshToken: undefined}}, {new: true} );
 
     const options = {  //so that we can make change in cookies only from server side
         httpOnly: true, 
