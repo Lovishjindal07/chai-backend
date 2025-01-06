@@ -234,8 +234,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid refresh token")
     }
-
-
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -291,8 +289,10 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Avatar file is missing")
 
     }
+
+    // TODO: delete old image - assignment
     
-    const avatar =await uploadOnCloudinary(avatarLocalPath);
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if(!avatar.url) {
         throw new ApiError(400, "Error while uploading on avatar");
@@ -343,9 +343,48 @@ const updateUserCoverImage =  asyncHandler(async (req, res) => {
     
 });
 
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params;
 
+    if(!username?.trim())  {
+        throw new ApiError(400, "username is missing");
+    }
 
-
+    const channel = await User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase(),
+            }
+        },
+        {
+            $lookup: {
+                from: "subsciptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscibers",
+            }
+        },
+        {
+            $lookup: {
+                from: "subsciptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscibedTo",
+            }
+        },
+        {
+            $addFields: {
+                subscibersCount: {
+                    $size: "$subscibers",
+                
+                },
+                channelsSubscibedToCount: {
+                    $size: "$subscribedTo"
+                }
+            }
+        }
+    ])
+})
 
 export {
   registerUser,
@@ -357,5 +396,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
 };
 
